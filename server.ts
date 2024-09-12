@@ -3,8 +3,16 @@ import http from "http";
 import mongoose from "mongoose";
 import { config } from "./.vscode/src/config/config";
 import Logging from "./.vscode/src/library/logging";
+import authorRoutes from "./.vscode/src/routes/Author";
+import bookRoutes from "./.vscode/src/routes/Books";
 
-const router = express();
+const app = express();
+
+/* Middleware to parse incoming JSON bodies */
+app.use(express.json());
+
+// /* Middleware to parse URL-encoded bodies (for form submissions) */
+// app.use(express.urlencoded({ extended: true }));
 
 /* connect to mongoose */
 mongoose
@@ -21,7 +29,7 @@ mongoose
 /* Only start the server if Mongo Connects */
 
 const StartServer = () => {
-  router.use((req, res, next) => {
+  app.use((req, res, next) => {
     /* Log the Request */
     Logging.info(
       `Incoming -> Method: [${req.method}] - Url: [${req.url}] - IP:[${req.socket.remoteAddress}]`
@@ -38,14 +46,16 @@ const StartServer = () => {
   });
 
   /* Routes */
+  app.use("/authors", authorRoutes);
+  app.use("/books", bookRoutes);
 
   /* healthcheck */
-  router.get("/ping", (req, res, next) =>
+  app.get("/ping", (req, res, next) =>
     res.status(200).json({ message: "pong" })
   );
 
   /* Error handling */
-  router.use((req, res, next) => {
+  app.use((req, res, next) => {
     const error = new Error("not found");
     Logging.error(error);
 
@@ -53,7 +63,7 @@ const StartServer = () => {
   });
 
   http
-    .createServer(router)
+    .createServer(app)
     .listen(config.server.port, () =>
       Logging.info(`Server is running on port ${config.server.port}`)
     );
